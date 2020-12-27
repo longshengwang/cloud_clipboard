@@ -23,6 +23,11 @@ var lastCopiedString string
 func main() {
 	flag.Parse()
 
+	if len(*lib.ServerAuthFlag) > 32 {
+		log.Warn("The server auth key size cannot more than 32.")
+		return
+	}
+
 	serverIpCh := make(chan string)
 	go findServer(serverIpCh)
 	serverIp, ok := <-serverIpCh

@@ -27,6 +27,11 @@ var globalRsaKey *lib.RsaKey
 func main() {
 	flag.Parse()
 
+	if len(*lib.ServerAuthFlag) > 32 {
+		log.Warn("The server auth key size cannot more than 32.")
+		return
+	}
+
 	var err error
 	globalRsaKey, err = lib.GenPublicPrivateKey()
 	if err != nil {
@@ -132,7 +137,7 @@ func connClosed(conn net.Conn) {
 }
 
 func startDiscoveryService() {
-	pc, err := net.ListenPacket("udp", ":" + strconv.Itoa(*lib.DiscoveryServiceFlag))
+	pc, err := net.ListenPacket("udp", ":"+strconv.Itoa(*lib.DiscoveryServiceFlag))
 	if err != nil {
 
 	}
