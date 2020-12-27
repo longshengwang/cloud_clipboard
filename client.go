@@ -20,7 +20,6 @@ import (
 
 var lastCopiedString string
 
-
 func main() {
 	flag.Parse()
 
@@ -40,7 +39,6 @@ func main() {
 }
 
 func startClient(ch chan string, serviceIp string) {
-	time.Sleep(time.Duration(2) * time.Second)
 	conn, err := net.Dial("tcp", serviceIp+":"+strconv.Itoa(*lib.ServerPortFlag))
 	if err != nil {
 		log.Error(err)
