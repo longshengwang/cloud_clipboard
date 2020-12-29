@@ -1,27 +1,23 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"cp_cloud/lib"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
 	"flag"
-	"github.com/atotto/clipboard"
 	"github.com/prometheus/common/log"
-	"io"
 	"net"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
-var lastCopiedString string
+//var lastCopiedString string
 
 func main() {
 	flag.Parse()
+
+	// // my self define password
+	//mySelfPassword := "m2y3_4p5a6s7s8w1o23rdea023_d13d1"
+	//lib.ServerAuthFlag = &mySelfPassword
 
 	if len(*lib.ServerAuthFlag) > 32 {
 		log.Warn("The server auth key size cannot more than 32.")
@@ -37,90 +33,8 @@ func main() {
 	}
 	log.Info("The server ip is ", serverIp)
 
-	ch := make(chan string)
-	go loopGetTextFromClipBoard(ch)
-	startClient(ch, serverIp)
+	lib.StartClient(serverIp)
 
-}
-
-func startClient(ch chan string, serviceIp string) {
-	conn, err := net.Dial("tcp", serviceIp+":"+strconv.Itoa(*lib.ServerPortFlag))
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	go handleServerConnection(conn, ch)
-	for s := range ch {
-		_, err = conn.Write(lib.GenConnByte(s))
-		if err != nil {
-			if err == io.EOF {
-				log.Error("Remote Connect is closed, so end the client app.")
-				close(ch)
-			} else {
-				log.Error("[54]error:", err)
-				close(ch)
-			}
-		}
-	}
-}
-
-func handleServerConnection(conn net.Conn, ch chan string) {
-	err := cAuth(conn)
-	if err != nil {
-		conn.Close()
-		return
-	}
-	tmp := make([]byte, 1024)
-	buffer := bytes.NewBuffer(nil)
-	for {
-		n, err := conn.Read(tmp[0:])
-		if err != nil {
-			if err == io.EOF {
-				log.Error("Conn is closed.")
-			} else {
-				log.Error("read conn with err: ", err)
-			}
-			break
-		} else {
-			buffer.Write(tmp[0:n])
-
-			allLen := buffer.Len()
-			allLenBack := allLen
-			tmpBufferBytes := buffer.Bytes()
-			scannerObj := bufio.NewScanner(buffer)
-			scannerObj.Split(lib.PacketSlitFunc)
-			for scannerObj.Scan() {
-				splitData := scannerObj.Bytes()
-				allLen -= len(splitData)
-				//fmt.Println("recv: ", string(splitData[8:]))
-				encryptContent := string(splitData[8:])
-				desContent := lib.AesDecrypt(encryptContent, *lib.ServerAuthFlag)
-				lastCopiedString = desContent
-				err := clipboard.WriteAll(desContent)
-				if err != nil {
-					log.Error("Copy to the clipboard with err:", err)
-				}
-			}
-			if allLen > 0 {
-				buffer.Write(tmpBufferBytes[allLenBack-allLen:])
-			}
-		}
-	}
-
-	close(ch)
-}
-
-func loopGetTextFromClipBoard(ch chan string) {
-	lastCopiedString, _ = clipboard.ReadAll()
-	for true {
-		n, _ := clipboard.ReadAll()
-		if n != lastCopiedString {
-			lastCopiedString = n
-			ch <- lastCopiedString
-		}
-		time.Sleep(time.Duration(300) * time.Millisecond)
-	}
 }
 
 func findServer(ch chan string) {
@@ -185,31 +99,4 @@ func multiCast(multiCastIP string, ch chan string, wg *sync.WaitGroup) {
 	}
 	wg.Done()
 	return
-}
-
-func cAuth(conn net.Conn) error {
-	publicKeyByteEncrypt := make([]byte, 1024)
-	n, e := conn.Read(publicKeyByteEncrypt)
-	if e != nil {
-		return e
-	}
-	var publicKeyP *rsa.PublicKey
-	publicKeyP, e = x509.ParsePKCS1PublicKey(publicKeyByteEncrypt[:n])
-	if e != nil {
-		log.Error("error:", e)
-		return e
-	}
-
-	passwdWithRandomKey := lib.GenPasswordWithRandomKey(*lib.ServerAuthFlag, 20)
-	cipherBytes, e := rsa.EncryptPKCS1v15(rand.Reader, publicKeyP, []byte(passwdWithRandomKey))
-	if e != nil {
-		log.Error("error:", e)
-		return e
-	}
-	n, e = conn.Write(cipherBytes)
-	if e != nil {
-		log.Error("error:", e)
-		return e
-	}
-	return nil
 }

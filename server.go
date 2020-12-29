@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type InnerMessage struct {
@@ -21,11 +22,17 @@ type InnerMessage struct {
 	copiedContent    string
 }
 
+var noClient = flag.Bool("noClient", false, "Don' run a client with server.")
+
 var globalConnMap sync.Map
 var globalRsaKey *lib.RsaKey
 
 func main() {
 	flag.Parse()
+
+	// //my self define password
+	//mySelfPassword := "m2y3_4p5a6s7s8w1o23rdea023_d13d1"
+	//lib.ServerAuthFlag = &mySelfPassword
 
 	if len(*lib.ServerAuthFlag) > 32 {
 		log.Warn("The server auth key size cannot more than 32.")
@@ -37,6 +44,13 @@ func main() {
 	if err != nil {
 		log.Error("Gen Rsa private/public key with err:", err)
 		return
+	}
+	if !*noClient {
+		go func() {
+			time.Sleep(2 * time.Second)
+
+			lib.StartClient("localhost")
+		}()
 	}
 	startServer()
 }
