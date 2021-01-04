@@ -30,10 +30,6 @@ var globalRsaKey *lib.RsaKey
 func main() {
 	flag.Parse()
 
-	// //my self define password
-	mySelfPassword := "m2y3_4p5a6s7s8w1o23rdea023_d13d1"
-	lib.ServerAuthFlag = &mySelfPassword
-
 	if len(*lib.ServerAuthFlag) > 32 {
 		log.Fatalln("The server auth key size cannot more than 32.")
 		return
