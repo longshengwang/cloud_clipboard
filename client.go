@@ -3,7 +3,7 @@ package main
 import (
 	"cp_cloud/lib"
 	"flag"
-	"github.com/prometheus/common/log"
+	"log"
 	"net"
 	"strings"
 	"sync"
@@ -16,11 +16,11 @@ func main() {
 	flag.Parse()
 
 	// // my self define password
-	//mySelfPassword := "m2y3_4p5a6s7s8w1o23rdea023_d13d1"
-	//lib.ServerAuthFlag = &mySelfPassword
+	mySelfPassword := "m2y3_4p5a6s7s8w1o23rdea023_d13d1"
+	lib.ServerAuthFlag = &mySelfPassword
 
 	if len(*lib.ServerAuthFlag) > 32 {
-		log.Warn("The server auth key size cannot more than 32.")
+		log.Fatalln("The server auth key size cannot more than 32.")
 		return
 	}
 
@@ -28,10 +28,10 @@ func main() {
 	go findServer(serverIpCh)
 	serverIp, ok := <-serverIpCh
 	if !ok {
-		log.Error("Cannot find the server.")
+		log.Fatalln("Cannot find the server.")
 		return
 	}
-	log.Info("The server ip is ", serverIp)
+	log.Println("The server ip is ", serverIp)
 
 	lib.StartClient(serverIp)
 
@@ -60,20 +60,20 @@ func multiCast(multiCastIP string, ch chan string, wg *sync.WaitGroup) {
 	dstAddr := &net.UDPAddr{IP: ip, Port: *lib.DiscoveryServiceFlag}
 	conn, err := net.ListenUDP("udp", srcAddr)
 	if err != nil {
-		log.Error("[multiCast:1]", err)
+		log.Println("[multiCast:1]", err)
 		wg.Done()
 		return
 	}
 	err = conn.SetDeadline(time.Now().Add(2 * time.Second))
 	if err != nil {
-		log.Error("[multiCast:2]", err)
+		log.Println("[multiCast:2]", err)
 		wg.Done()
 		return
 	}
 
 	n, err := conn.WriteToUDP([]byte(*lib.ClientHelloFlag), dstAddr)
 	if err != nil {
-		log.Error("[multiCast:3]", err)
+		log.Println("[multiCast:3]", err)
 		wg.Done()
 		return
 	}
@@ -81,7 +81,7 @@ func multiCast(multiCastIP string, ch chan string, wg *sync.WaitGroup) {
 
 	n, addr, err := conn.ReadFrom(data)
 	if err != nil {
-		log.Error("[multiCast:4]", err)
+		log.Println("[multiCast:4]", err)
 		wg.Done()
 		return
 	}
@@ -95,7 +95,7 @@ func multiCast(multiCastIP string, ch chan string, wg *sync.WaitGroup) {
 
 	err = conn.Close()
 	if err != nil {
-		log.Error("[multiCast:5]", err)
+		log.Println("[multiCast:5]", err)
 	}
 	wg.Done()
 	return

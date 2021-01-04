@@ -7,7 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
-	"github.com/prometheus/common/log"
+	"log"
 	"strings"
 )
 
@@ -19,7 +19,7 @@ type RsaKey struct {
 func GenPublicPrivateKey() (*RsaKey, error) {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 512)
 	if err != nil {
-		log.Error(err)
+		log.Println(err)
 		return nil, err
 	}
 	publicKey := privateKey.PublicKey
@@ -103,11 +103,11 @@ var size3 = 32
 func GetSuitablePassword(password string) string {
 	passwdLen := len(password)
 	if passwdLen <= size1 {
-		return password + strings.Repeat("1", size1 - passwdLen)
-	} else if passwdLen <= size2 && passwdLen > size1{
-		return password + strings.Repeat("1", size2 - passwdLen)
-	} else if passwdLen <= size3 && passwdLen > size2{
-		return password + strings.Repeat("1", size3 - passwdLen)
+		return password + strings.Repeat("1", size1-passwdLen)
+	} else if passwdLen <= size2 && passwdLen > size1 {
+		return password + strings.Repeat("1", size2-passwdLen)
+	} else if passwdLen <= size3 && passwdLen > size2 {
+		return password + strings.Repeat("1", size3-passwdLen)
 	} else {
 		return password[:size3]
 	}

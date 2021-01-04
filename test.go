@@ -3,25 +3,33 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"cp_cloud/lib"
 	"encoding/binary"
 	"fmt"
+	"os/exec"
 	"strconv"
 	"strings"
 )
 
 func main() {
 	//println(lib.GetSuitablePassword("12345678901234567890"))
+	fmt.Println()
 
-	orig := "hello world dasdf asdf as dfas dfa sdf a sdf"
-	key := "adasdfasd12312asdfa1231"
-	fmt.Println("原文：", orig)
-
-	encryptCode := lib.AesEncrypt(orig, key)
-	fmt.Println("密文：", encryptCode)
-
-	decryptCode := lib.AesDecrypt(encryptCode, key)
-	fmt.Println("解密结果：", decryptCode)
+	pasteCmd := exec.Command("java", "TTT")
+	out, err := pasteCmd.Output()
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(string(out))
+	}
+	//orig := "hello world dasdf asdf as dfas dfa sdf a sdf"
+	//key := "adasdfasd12312asdfa1231"
+	//fmt.Println("原文：", orig)
+	//
+	//encryptCode := lib.AesEncrypt(orig, key)
+	//fmt.Println("密文：", encryptCode)
+	//
+	//decryptCode := lib.AesDecrypt(encryptCode, key)
+	//fmt.Println("解密结果：", decryptCode)
 
 	//g,_:=lib.GenPublicPrivateKey()
 	//fmt.Println(g.PublicKey)

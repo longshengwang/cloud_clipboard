@@ -8,8 +8,8 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"flag"
-	"github.com/prometheus/common/log"
 	"io"
+	"log"
 	"net"
 	"strconv"
 	"strings"
@@ -31,18 +31,18 @@ func main() {
 	flag.Parse()
 
 	// //my self define password
-	//mySelfPassword := "m2y3_4p5a6s7s8w1o23rdea023_d13d1"
-	//lib.ServerAuthFlag = &mySelfPassword
+	mySelfPassword := "m2y3_4p5a6s7s8w1o23rdea023_d13d1"
+	lib.ServerAuthFlag = &mySelfPassword
 
 	if len(*lib.ServerAuthFlag) > 32 {
-		log.Warn("The server auth key size cannot more than 32.")
+		log.Fatalln("The server auth key size cannot more than 32.")
 		return
 	}
 
 	var err error
 	globalRsaKey, err = lib.GenPublicPrivateKey()
 	if err != nil {
-		log.Error("Gen Rsa private/public key with err:", err)
+		log.Fatalln("Gen Rsa private/public key with err:", err)
 		return
 	}
 	if !*noClient {
@@ -60,7 +60,7 @@ func startServer() {
 	port := *lib.ServerPortFlag
 	ln, err := net.Listen("tcp", ":"+strconv.Itoa(port))
 	if err != nil {
-		log.Error("Cannot start the server at port ", port)
+		log.Println("Cannot start the server at port ", port)
 		return
 	}
 
@@ -79,14 +79,14 @@ func startServer() {
 
 func clientsContentShared(ch chan InnerMessage) {
 	for c := range ch {
-		log.Info(c.connRemoteString, " [COPIED] ", c.copiedContent)
+		//log.Println(c.connRemoteString, " [COPIED] ", c.copiedContent)
 		globalConnMap.Range(func(key, value interface{}) bool {
 			if key != c.connRemoteString {
 				p, ok := value.(net.Conn)
 				if ok {
 					_, err := p.Write(lib.GenConnByte(c.copiedContent))
 					if err != nil {
-						log.Error(err)
+						log.Println(err)
 					}
 				}
 			}
@@ -96,8 +96,7 @@ func clientsContentShared(ch chan InnerMessage) {
 }
 
 func handleConnection(conn net.Conn, shareCh chan InnerMessage) {
-	log.Debug(conn.RemoteAddr().String(), " is Connect")
-	//conn.Write()
+	//log.Println(conn.RemoteAddr().String(), " is Connect")
 	isClientAccess, err := auth(conn)
 	if err != nil {
 		conn.Close()
@@ -107,7 +106,7 @@ func handleConnection(conn net.Conn, shareCh chan InnerMessage) {
 		conn.Close()
 		return
 	}
-	log.Info(conn.RemoteAddr().String(), " is connect with correct password.")
+	//log.Println(conn.RemoteAddr().String(), " is connect with correct password.")
 
 	globalConnMap.Store(conn.RemoteAddr().String(), conn)
 	tmp := make([]byte, 1024)
@@ -117,10 +116,10 @@ func handleConnection(conn net.Conn, shareCh chan InnerMessage) {
 		buffer.Write(tmp[0:n])
 		if err != nil {
 			if err != io.EOF {
-				log.Error("Read conn with err: ", err)
+				log.Println("Read conn with err: ", err)
 
 			} else {
-				log.Error("Connection ", conn.RemoteAddr().String(), " is closed.")
+				log.Println("Connection ", conn.RemoteAddr().String(), " is closed.")
 			}
 			connClosed(conn)
 			break
@@ -186,7 +185,7 @@ func auth(conn net.Conn) (bool, error) {
 	authKeyBytesEncrypt := make([]byte, 1024)
 	len, err = conn.Read(authKeyBytesEncrypt)
 	if err != nil {
-		log.Error("Cannot read auth key from client:", conn.RemoteAddr().String(), ". Error: ", err)
+		log.Println("Cannot read auth key from client:", conn.RemoteAddr().String(), ". Error: ", err)
 		return false, err
 	}
 	var authKeyBytes []byte
@@ -194,13 +193,13 @@ func auth(conn net.Conn) (bool, error) {
 	randomKeyAndPassword := string(authKeyBytes)
 	splitIndex := strings.Index(randomKeyAndPassword, "]")
 	if splitIndex == -1 {
-		log.Error("Cannot find the split key from the key. Client:", conn.RemoteAddr().String())
+		log.Println("Cannot find the split key from the key. Client:", conn.RemoteAddr().String())
 		return false, nil
 	}
 	password := randomKeyAndPassword[splitIndex+1:]
 	if password == *lib.ServerAuthFlag {
 		return true, nil
 	}
-	log.Error("Password is not same with the server password. Client:", conn.RemoteAddr().String())
+	log.Println("Password is not same with the server password. Client:", conn.RemoteAddr().String())
 	return false, nil
 }

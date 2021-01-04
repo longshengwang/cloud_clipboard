@@ -7,8 +7,8 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"github.com/atotto/clipboard"
-	"github.com/prometheus/common/log"
 	"io"
+	"log"
 	"net"
 	"strconv"
 	"strings"
@@ -19,26 +19,26 @@ import (
 var lastCopiedString string
 
 func StartClient(serviceIp string) {
-	log.Info("Ready to start the client.")
+	log.Println("Ready to start the client.")
 	ch := make(chan string)
 	go loopGetTextFromClipBoard(ch)
 	conn, err := net.Dial("tcp", serviceIp+":"+strconv.Itoa(*ServerPortFlag))
 	if err != nil {
-		log.Error(err)
+		log.Fatalln(err)
 		return
 	}
 
 	go handleServerConnection(conn, ch)
 
-	log.Info("Start the client successfully.")
+	log.Println("Start the client successfully.")
 	for s := range ch {
 		_, err = conn.Write(GenConnByte(s))
 		if err != nil {
 			if err == io.EOF {
-				log.Error("Remote Connect is closed, so end the client app.")
+				log.Fatalln("Remote Connect is closed, so end the client app.")
 				close(ch)
 			} else {
-				log.Error("[54]error:", err)
+				log.Println("Error:", err)
 				close(ch)
 			}
 		}
@@ -57,9 +57,9 @@ func handleServerConnection(conn net.Conn, ch chan string) {
 		n, err := conn.Read(tmp[0:])
 		if err != nil {
 			if err == io.EOF {
-				log.Error("Conn is closed.")
+				log.Println("Conn is closed.")
 			} else {
-				log.Error("read conn with err: ", err)
+				log.Println("read conn with err: ", err)
 			}
 			break
 		} else {
@@ -79,7 +79,7 @@ func handleServerConnection(conn net.Conn, ch chan string) {
 				lastCopiedString = desContent
 				err := clipboard.WriteAll(desContent)
 				if err != nil {
-					log.Error("Copy to the clipboard with err:", err)
+					log.Println("Copy to the clipboard with err:", err)
 				}
 			}
 			if allLen > 0 {
@@ -126,20 +126,20 @@ func multiCast(multiCastIP string, ch chan string, wg *sync.WaitGroup) {
 	dstAddr := &net.UDPAddr{IP: ip, Port: *DiscoveryServiceFlag}
 	conn, err := net.ListenUDP("udp", srcAddr)
 	if err != nil {
-		log.Error("[multiCast:1]", err)
+		log.Println("[multiCast:1]", err)
 		wg.Done()
 		return
 	}
 	err = conn.SetDeadline(time.Now().Add(2 * time.Second))
 	if err != nil {
-		log.Error("[multiCast:2]", err)
+		log.Println("[multiCast:2]", err)
 		wg.Done()
 		return
 	}
 
 	n, err := conn.WriteToUDP([]byte(*ClientHelloFlag), dstAddr)
 	if err != nil {
-		log.Error("[multiCast:3]", err)
+		log.Println("[multiCast:3]", err)
 		wg.Done()
 		return
 	}
@@ -147,7 +147,7 @@ func multiCast(multiCastIP string, ch chan string, wg *sync.WaitGroup) {
 
 	n, addr, err := conn.ReadFrom(data)
 	if err != nil {
-		log.Error("[multiCast:4]", err)
+		log.Println("[multiCast:4]", err)
 		wg.Done()
 		return
 	}
@@ -161,7 +161,7 @@ func multiCast(multiCastIP string, ch chan string, wg *sync.WaitGroup) {
 
 	err = conn.Close()
 	if err != nil {
-		log.Error("[multiCast:5]", err)
+		log.Println("[multiCast:5]", err)
 	}
 	wg.Done()
 	return
@@ -176,19 +176,19 @@ func cAuth(conn net.Conn) error {
 	var publicKeyP *rsa.PublicKey
 	publicKeyP, e = x509.ParsePKCS1PublicKey(publicKeyByteEncrypt[:n])
 	if e != nil {
-		log.Error("error:", e)
+		log.Println("error:", e)
 		return e
 	}
 
 	passwdWithRandomKey := GenPasswordWithRandomKey(*ServerAuthFlag, 20)
 	cipherBytes, e := rsa.EncryptPKCS1v15(rand.Reader, publicKeyP, []byte(passwdWithRandomKey))
 	if e != nil {
-		log.Error("error:", e)
+		log.Println("error:", e)
 		return e
 	}
 	n, e = conn.Write(cipherBytes)
 	if e != nil {
-		log.Error("error:", e)
+		log.Println("error:", e)
 		return e
 	}
 	return nil
