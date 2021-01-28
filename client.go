@@ -15,22 +15,45 @@ import (
 func main() {
 	flag.Parse()
 
+	loopInterval := 5
+	loopCount := 0
+
+	//// my self define password
+	//mySelfPassword := "m2y3_4p5a6s7s8w1o23rdea023_d13d1"
+	//lib.ServerAuthFlag = &mySelfPassword
+
 	if len(*lib.ServerAuthFlag) > 32 {
 		log.Fatalln("The server auth key size cannot more than 32.")
 		return
 	}
-
-	serverIpCh := make(chan string)
-	go findServer(serverIpCh)
-	serverIp, ok := <-serverIpCh
-	if !ok {
-		log.Fatalln("Cannot find the server.")
-		return
+	for {
+		serverIpCh := make(chan string)
+		go findServer(serverIpCh)
+		serverIp, ok := <-serverIpCh
+		if !ok {
+			loopCount++
+			loopInterval = getLoopInterval(loopCount)
+			log.Println("Cannot find the server. Go to sleep ", loopInterval, "s")
+			time.Sleep(time.Duration(loopInterval) * time.Second)
+			continue
+		}
+		log.Println("The server ip is ", serverIp)
+		loopCount = 0
+		loopInterval = 5
+		lib.StartClient(serverIp)
+		time.Sleep(time.Duration(loopInterval) * time.Second)
+		log.Println("Oops! The server ", serverIp, " has been broken.")
 	}
-	log.Println("The server ip is ", serverIp)
+}
 
-	lib.StartClient(serverIp)
-
+func getLoopInterval(count int) int {
+	if count < 20 {
+		return 5
+	} else if count >= 20 && count < 100 {
+		return 5 + count/10
+	} else {
+		return 60
+	}
 }
 
 func findServer(ch chan string) {
