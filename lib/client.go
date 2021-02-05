@@ -20,32 +20,50 @@ var lastCopiedString string
 
 func StartClient(serviceIp string) {
 	log.Println("Ready to start the client.")
-	ch := make(chan string)
-	go loopGetTextFromClipBoard(ch)
+	//ch := make(chan string)
+	//go loopGetTextFromClipBoard(ch)
 	conn, err := net.Dial("tcp", serviceIp+":"+strconv.Itoa(*ServerPortFlag))
 	if err != nil {
 		log.Fatalln(err)
 		return
 	}
-
-	go handleServerConnection(conn, ch)
+	go handleServerConnection(conn)
 
 	log.Println("Start the client successfully.")
-	for s := range ch {
-		_, err = conn.Write(GenConnByte(s))
-		if err != nil {
-			if err == io.EOF {
-				log.Fatalln("Remote Connect is closed, so end the client app.")
-				close(ch)
-			} else {
-				log.Println("Error:", err)
-				close(ch)
+	lastCopiedString, _ = clipboard.ReadAll()
+	for true {
+		n, _ := clipboard.ReadAll()
+		if n != lastCopiedString {
+			lastCopiedString = n
+			_, err = conn.Write(GenConnByte(lastCopiedString))
+			if err != nil {
+				if err == io.EOF {
+					log.Println("Remote Connect is closed, so end the client app.")
+				} else {
+					log.Println("Error:", err)
+				}
+				break
 			}
 		}
+		time.Sleep(time.Duration(300) * time.Millisecond)
 	}
+
+	//
+	//for s := range ch {
+	//	_, err = conn.Write(GenConnByte(s))
+	//	if err != nil {
+	//		if err == io.EOF {
+	//			log.Fatalln("Remote Connect is closed, so end the client app.")
+	//			close(ch)
+	//		} else {
+	//			log.Println("Error:", err)
+	//			close(ch)
+	//		}
+	//	}
+	//}
 }
 
-func handleServerConnection(conn net.Conn, ch chan string) {
+func handleServerConnection(conn net.Conn) {
 	err := cAuth(conn)
 	if err != nil {
 		conn.Close()
@@ -87,8 +105,6 @@ func handleServerConnection(conn net.Conn, ch chan string) {
 			}
 		}
 	}
-
-	close(ch)
 }
 
 func loopGetTextFromClipBoard(ch chan string) {
