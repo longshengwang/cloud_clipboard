@@ -1,15 +1,15 @@
-# Description
-This is a clipboard shared at the same network segment.
+# 介绍
+这是一个局域网内粘贴板共享工具软件(公网需要对安全方面做处理，暂时未做)
 
-It has the functions
-- client finds the server automatically. 
-- The server has the authentication
-- The data encrypted
+功能清单
+- 客户端能自动找到服务端
+- 服务端可以设定密码
+- 客户端和服务端通信加密
 
 
-# How to use
-### 1. run from code build
-##### 1.1. build the code to exec app
+# 如何使用
+### 1. 从源码安装
+##### 1.1. 编译代码
 ```
 //build server
 go build server.go  
@@ -17,23 +17,23 @@ go build server.go
 go build client.go
 ```
 
-##### 1.2. exec the app
-> No need assign the server ip for client(Client find the server by udp broadcast)
+##### 1.2. 执行应用
+> 启用客户端时，不需要指定服务端的IP地址，因为用了UDP广播来查找服务端
 
 
-### 2. run from the pre-build app
+### 2. 直接运行程序
 [github release](https://github.com/longshengwang/cloud_clipboard/releases)
 
 
-# Tips [ IMPORTANT ]
-Only one server can be run at a segment which run the same param.
+# 注意 [ IMPORTANT ]
+在一个局域网下只能运行一个相同参数的服务端。
 
-But multi server can be run with the different params - cw/sw.
+如果设置不同的参数（cw/sw），是可以同时运行多个的服务端的
 ```
 Usage of ./server_macos:
-  -auth string
+  -auth string   
     	Server Auth Password. Cannot more than 32 char(256 bit) (default "cloud_clipboard_password")
-  -cw string
+  -cw string        
     	Client Hello Word (default "Hello, is my clipboard?")
   -discoveryPort int
     	Discovery Service Port (default 9266)
