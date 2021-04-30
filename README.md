@@ -43,4 +43,5 @@ Usage of ./server_macos:
     	Server Hello Word (default "Hey, brother, you are at the home of clipboard server.")
 ```
 
-
+# 关于图片拷贝的共享
+图片拷贝的共享会需要用到GUI方面的库，目前没有找到Go的库来便捷的传递图片。Java中倒是有现成的库可以用。
